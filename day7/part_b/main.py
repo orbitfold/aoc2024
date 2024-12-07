@@ -6,6 +6,8 @@ def concatenate(x1, x2):
 def evaluate(value, equation, result):
     if len(equation) == 0:
         return value == result
+    if result > value:
+        return False
     return (evaluate(value, equation[1:], result * equation[0]) or
             evaluate(value, equation[1:], result + equation[0]) or
             evaluate(value, equation[1:], concatenate(result, equation[0])))
