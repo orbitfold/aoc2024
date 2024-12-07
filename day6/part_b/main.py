@@ -1,5 +1,6 @@
 import click
 import numpy as np
+import numba
 
 def next_position(data, row, col, direction, path):
     if direction == '^':
