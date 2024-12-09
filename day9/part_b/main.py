@@ -43,6 +43,7 @@ class FileSystem:
             if file_.empty_space >= last_file_space:
                 self.files[-self.backwards_counter - 1].empty_space += self.files[-self.backwards_counter].file_space + self.files[-self.backwards_counter].empty_space
                 new_file = self.files.pop(-self.backwards_counter)
+                self.backwards_counter -= 1
                 self.files.insert(i + 1, File(new_file.file_id, new_file.file_space, file_.empty_space - new_file.file_space))
                 file_.empty_space = 0
                 break
