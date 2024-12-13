@@ -1,22 +1,8 @@
 import click
 import numpy as np
+from numpy.lib.stride_tricks import sliding_window_view
 import matplotlib.pyplot as plt
 
-def perimeter(data, pos):
-    neighbours = 0
-    w = (pos[0] - 1, pos[1])
-    if w[0] >= 0 and data[*w] == data[*pos]:
-        neighbours += 1
-    e = (pos[0] + 1, pos[1])
-    if e[0] < data.shape[0] and data[*e] == data[*pos]:
-        neighbours += 1
-    n = (pos[0], pos[1] - 1)
-    if n[1] >= 0 and data[*n] == data[*pos]:
-        neighbours += 1
-    s = (pos[0], pos[1] + 1)
-    if s[1] < data.shape[1] and data[*s] == data[*pos]:
-        neighbours += 1
-    return 4 - neighbours
 
 def floodfill(data, result, letter, counter, pos):
     if pos[0] < 0 or pos[1] < 0 or pos[0] >= data.shape[0] or pos[1] >= data.shape[1]:
@@ -30,6 +16,26 @@ def floodfill(data, result, letter, counter, pos):
     floodfill(data, result, letter, counter, (pos[0] + 1, pos[1]))
     floodfill(data, result, letter, counter, (pos[0], pos[1] - 1))
     floodfill(data, result, letter, counter, (pos[0], pos[1] + 1))
+
+
+def count_borders(data):
+    data = np.pad(data, 1)
+    line_counter = 0
+    for row1, row2 in zip(data[:-1], data[1:]):
+        inside_line = (0, 0)
+        for i in range(row1.shape[0]):
+            if (row1[i] == 0 and row2[i] != 0):
+                if inside_line == (0, 0) or inside_line == (1, 0):
+                    inside_line = (0, 1)
+                    line_counter += 1
+            elif (row1[i] != 0 and row2[i] == 0):
+                if inside_line == (0, 0) or inside_line == (0, 1):
+                    inside_line = (1, 0)
+                    line_counter += 1
+            elif (row1[i] == 0 and row2[i] == 0) or (row1[i] == 1 and row2[i] == 1):
+                if inside_line in [(0, 1), (1, 0)]:
+                    inside_line = (0, 0)
+    return line_counter
 
 @click.command()
 @click.option('-i', '--input-file', help='Input data file')
@@ -49,15 +55,11 @@ def main(input_file):
         result = 0
         for area in np.unique(derived):
             a = np.count_nonzero(derived == area)
-            p = 0
-            for patch in np.argwhere(derived == area):
-                p += perimeter(derived, patch)
-            print(area, a * p)
-            result += a * p
-    print(result)
-        #plt.imshow(derived)
-        #plt.show()
-            
+            patch = np.zeros(derived.shape)
+            patch[derived == area] = 1
+            print(area, a, count_borders(patch), count_borders(patch.T))
+            result += (count_borders(patch) + count_borders(patch.T)) * a
+    print(result)            
 
 if __name__ == '__main__':
     main()
