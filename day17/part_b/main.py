@@ -58,7 +58,35 @@ class Computer:
         print(f"a: {self.a}, b: {self.b}, c: {self.c}, pointer: {self.pointer}")
 
     def disassemble(self, program):
-        pass
+        def parse_combo(arg):
+            if 0 <= arg <= 3:
+                return str(arg)
+            elif arg == 4:
+                return "a"
+            elif arg == 5:
+                return "b"
+            elif arg == 6:
+                return "c"
+            else:
+                raise RuntimeError
+        for p in range(0, len(program), 2):
+            opcode, arg = program[p], program[p + 1]
+            if opcode == 0:
+                print(f"adv {parse_combo(arg)}")
+            elif opcode == 1:
+                print(f"bxl {arg}")
+            elif opcode == 2:
+                print(f"bst {parse_combo(arg)}")
+            elif opcode == 3:
+                print(f"jnz {arg}")
+            elif opcode == 4:
+                print(f"bxc")
+            elif opcode == 5:
+                print(f"out {parse_combo(arg)}")
+            elif opcode == 6:
+                print(f"bdv {parse_combo(arg)}")
+            elif opcode == 7:
+                print(f"cdv {parse_combo(arg)}")
 
     def run(self, program, debug=False):
         self.pointer = 0
@@ -85,8 +113,29 @@ class Computer:
                 self.print_state()
             if self.pointer >= len(program):
                 break
-                    
 
+def candidates(a0, output):
+    result = []
+    for offset in range(8):
+        a = a0 + offset
+        b = a % 8
+        b = b ^ 1
+        c = a // (2 ** b)
+        b = b ^ c
+        b = b ^ 4
+        if b % 8 == output:
+            result.append(a * 8)
+    return result
+
+def iterates(program):
+    candidate_list = [0]
+    for x in reversed(program):
+        new_candidate_list = []
+        for candidate in candidate_list:
+            new_candidate_list += candidates(candidate, x)
+        candidate_list = new_candidate_list
+    return candidate_list
+    
 @click.command()
 @click.option('-i', '--input-file', help='Input data file')
 def main(input_file):
@@ -95,10 +144,11 @@ def main(input_file):
         registers, program = data.split('\n\n')
         registers = [int(register[12:]) for register in registers.strip().split('\n')]
         program = [int(c) for c in program[9:].strip().split(',')]
-        machine = Computer(a=registers[0], b=registers[1], c=registers[2])
-        print(f"a:{machine.a}, b:{machine.b}, c:{machine.c}")
         print(program)
-        machine.a = 200000
+        machine = Computer(a=registers[0], b=registers[1], c=registers[2])
+        machine.disassemble(program)
+        machine.a = min(iterates(program)) // 8
+        print(machine.a)
         machine.run(program)
         print(",".join([str(x) for x in machine.output]))
         
